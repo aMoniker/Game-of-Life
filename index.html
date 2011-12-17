@@ -23,6 +23,7 @@
              $canvas: $('#the_canvas')
             ,grid: []
             ,ticker: undefined
+            ,ticking: false
             
             ,init: function() {
                 var ctx = this.get_context();
@@ -50,10 +51,16 @@
                 */
                 
                 this.paint_grid();
-                this.ticker = setInterval(function(){ GOL.tick(); }, 1);
+                this.ticker = setInterval(function(){
+                    if(!this.ticking) {
+                        GOL.tick();
+                    }
+                }, 1);
             }
             
             ,tick: function() {
+                this.ticking = true;
+                
                 var new_grid = JSON.parse(JSON.stringify(this.grid));
                 
                 for( x=0; x < this.grid.length; x++ ) {
@@ -72,6 +79,8 @@
                 this.paint_grid();
                 
                 console.log('tick');
+                
+                this.ticking = false;
             }
             
             ,count_live_neighbors: function(x, y) {
