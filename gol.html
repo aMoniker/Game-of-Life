@@ -1,0 +1,144 @@
+<html>
+
+<head>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <style type="text/css">
+        body {
+            background: #000;
+        }
+        #the_canvas {
+            display: block;
+            border: 2px solid #009fc2;
+            height: 500px;
+            width: 500px;
+            margin: 100px auto 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="the_canvas" width="500" height="500"></canvas>
+    <script type="text/javascript">
+        window.GOL = {
+             $canvas: $('#the_canvas')
+            ,grid: []
+            ,ticker: undefined
+            
+            ,init: function() {
+                var ctx = this.get_context();
+                var height = this.$canvas.height();
+                var width = this.$canvas.width();
+                
+                for( x=0; x < width; x++ ) {
+                    for( y=0; y < height; y++ ) {
+                        var pixel_alive = Math.random() > 0.5 ? true : false;
+                        
+                        if(this.grid[x] === undefined) { this.grid[x] = []; }
+                        
+                        //this.grid[x][y] = false;
+                        this.grid[x][y] = pixel_alive;
+                    }
+                }
+                
+                /*
+                //glider
+                this.grid[1][0] = true;
+                this.grid[2][1] = true;
+                this.grid[0][2] = true;
+                this.grid[1][2] = true;
+                this.grid[2][2] = true;
+                */
+                
+                this.paint_grid();
+                this.ticker = setInterval(function(){ GOL.tick(); }, 1);
+            }
+            
+            ,tick: function() {
+                var new_grid = JSON.parse(JSON.stringify(this.grid));
+                
+                for( x=0; x < this.grid.length; x++ ) {
+                    for( y=0; y < this.grid[0].length; y++ ) {
+                        var buddies = this.count_live_neighbors(x, y);
+                        
+                        if(this.grid[x][y] && (buddies < 2 || buddies > 3)) {
+                            new_grid[x][y] = false;
+                        } else if(buddies === 3) {
+                            new_grid[x][y] = true;
+                        }
+                    }
+                }
+                
+                this.grid = new_grid;
+                this.paint_grid();
+                
+                console.log('tick');
+            }
+            
+            ,count_live_neighbors: function(x, y) {
+                if(this.grid[x] === undefined || this.grid[x][y] === undefined) {
+                    return false;
+                }
+                
+                //wrap edges of grid
+                var x_minus_one = (x === 0 ? this.grid.length-1 : x-1);
+                var x_plus_one = (x === this.grid.length-1 ? 0 : x+1);
+                var y_minus_one = (y === 0 ? this.grid[0].length-1 : y-1);
+                var y_plus_one = (y === this.grid[0].length-1 ? 0 : y+1);
+                
+                /* Neighbors:
+                 *  _ _ _
+                 * |1 2 3|
+                 * |4 x 5|
+                 * |6_7_8|
+                 * 
+                 */
+                var neighbors = [
+                     this.grid[x_minus_one][y_minus_one] //1
+                    ,this.grid[x][y_minus_one]           //2
+                    ,this.grid[x_plus_one][y_minus_one]  //3
+                    ,this.grid[x_minus_one][y]           //4
+                    ,this.grid[x_plus_one][y]            //5
+                    ,this.grid[x_minus_one][y_plus_one]  //6
+                    ,this.grid[x][y_plus_one]            //7
+                    ,this.grid[x_plus_one][y_plus_one]   //8
+                ];
+                var live_neighbors = 0;
+                for( n=0; n < neighbors.length; n++ ) {
+                    if(neighbors[n]) { live_neighbors++; }
+                }
+                
+                return live_neighbors;
+            }
+            
+            ,paint_grid: function() {
+                if(this.grid[0] === undefined || this.grid[0][0] === undefined) {
+                    console.warn('empty grid');
+                    return false;
+                }
+                
+                var ctx = this.get_context();
+                var pixel = ctx.createImageData(1, 1);
+                pixel.data[3] = 255;
+                
+                for( x=0; x < this.grid.length; x++ ) {
+                    for( y=0; y < this.grid[0].length; y++ ) {
+                        var pixel_value = this.grid[x][y] ? 0 : 255;
+                        pixel.data[0] = pixel.data[1] = pixel.data[2] = pixel_value;
+                        
+                        ctx.putImageData(pixel, x, y);
+                    }
+                }
+            }
+            
+            ,get_context: function() {
+                return this.$canvas[0].getContext('2d');
+            }
+        }
+        
+        $(document).ready(function() {
+            GOL.init();
+        });
+    </script>
+</body>
+
+</html>
